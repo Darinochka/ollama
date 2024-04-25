@@ -702,18 +702,33 @@ func convertModel(name, path string, fn func(resp api.ProgressResponse)) (string
 	return path, nil
 }
 
+func modelFilepath(n model.Name) (string, error) {
+	if !n.IsFullyQualified() {
+		return "", fmt.Errorf("unqualified model name")
+	}
+	return filepath.Join(n.Host, n.Namespace, n.Model, n.Tag), nil
+}
+
 func CopyModel(src, dst model.Name) error {
 	manifests, err := GetManifestPath()
 	if err != nil {
 		return err
 	}
 
-	dstpath := filepath.Join(manifests, dst.FilepathNoBuild())
+	dstModelPath, err := modelFilepath(dst)
+	if err != nil {
+		return err
+	}
+	dstpath := filepath.Join(manifests, dstModelPath)
 	if err := os.MkdirAll(filepath.Dir(dstpath), 0o755); err != nil {
 		return err
 	}
 
-	srcpath := filepath.Join(manifests, src.FilepathNoBuild())
+	srcModelPath, err := modelFilepath(src)
+	if err != nil {
+		return err
+	}
+	srcpath := filepath.Join(manifests, srcModelPath)
 	srcfile, err := os.Open(srcpath)
 	if err != nil {
 		return err
